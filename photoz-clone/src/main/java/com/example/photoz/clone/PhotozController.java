@@ -6,20 +6,24 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.validation.Valid;
 
+import java.io.IOException;
 import java.util.*;
 
 @RestController
 public class PhotozController {
 	
-	private Map<String, Photo> db = new HashMap<String, Photo>(){{
-		put("1", new Photo("1", "hello.jpg"));
-	}};
+	private final PhotozService photozService;
 	
+	public PhotozController(PhotozService photozService) {
+		this.photozService = photozService;
+	}
 	
 	@GetMapping("/")
 	public String hello() {
@@ -27,30 +31,28 @@ public class PhotozController {
 	}
 	
 	@GetMapping("/photoz")
-	public Collection<Photo> get(){
-		return db.values();
+	public Iterable<Photo> get(){
+		return photozService.get();
 	}
 	
 	@GetMapping("/photoz/{id}")
-	public Photo get(@PathVariable String id){
+	public Photo get(@PathVariable Integer id){
 		
-		Photo photo = db.get(id);
+		Photo photo = photozService.get(id);
 		if (photo == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
 		return photo;
 	}
 	
 	@DeleteMapping("/deletePhotoz/{id}")
-	public void delete(@PathVariable String id){
+	public void delete(@PathVariable Integer id){
 		
-		Photo photo = db.remove(id);
-		if (photo == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+		photozService.remove(id);
 	}
 	
 	@PostMapping("/photoz")
-	public Photo create(@RequestBody @Valid Photo photo){
+	public Photo create(@RequestPart("data") MultipartFile file) throws IOException{
 		
-		photo.setId(UUID.randomUUID().toString());
-		db.put(photo.getId(), photo);
+		Photo photo = photozService.save(file.getOriginalFilename(), file.getContentType(), file.getBytes());
 		
 		return photo;
 	}
